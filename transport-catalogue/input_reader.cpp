@@ -3,14 +3,13 @@
 #include <algorithm>
 #include <cassert>
 #include <iterator>
+#include <utility>
 
-#define Stop   "Stop"
-#define Bus     "Bus"
+namespace transport_catalogue {
 
-/**
- * Парсит строку вида "10.123,  -30.1837" и возвращает пару координат (широта, долгота)
- */
-geo::Coordinates ParseCoordinates(std::string_view str) {
+namespace detail {
+
+Coordinates ParseCoordinates(std::string_view str) {
     static const double nan = std::nan("");
 
     auto not_space = str.find_first_not_of(' ');
@@ -28,9 +27,6 @@ geo::Coordinates ParseCoordinates(std::string_view str) {
     return {lat, lng};
 }
 
-/**
- * Удаляет пробелы в начале и конце строки
- */
 std::string_view Trim(std::string_view string) {
     const auto start = string.find_first_not_of(' ');
     if (start == string.npos) {
@@ -39,9 +35,6 @@ std::string_view Trim(std::string_view string) {
     return string.substr(start, string.find_last_not_of(' ') + 1 - start);
 }
 
-/**
- * Разбивает строку string на n строк, с помощью указанного символа-разделителя delim
- */
 std::vector<std::string_view> Split(std::string_view string, char delim) {
     std::vector<std::string_view> result;
 
@@ -60,11 +53,6 @@ std::vector<std::string_view> Split(std::string_view string, char delim) {
     return result;
 }
 
-/**
- * Парсит маршрут.
- * Для кольцевого маршрута (A>B>C>A) возвращает массив названий остановок [A,B,C,A]
- * Для некольцевого маршрута (A-B-C-D) возвращает массив названий остановок [A,B,C,D,C,B,A]
- */
 std::vector<std::string_view> ParseRoute(std::string_view route) {
     if (route.find('>') != route.npos) {
         return Split(route, '>');
@@ -77,7 +65,7 @@ std::vector<std::string_view> ParseRoute(std::string_view route) {
     return results;
 }
 
-CommandDescription ParseCommandDescription(std::string_view line) {//используется для ввода строки
+CommandDescription ParseCommandDescription(std::string_view line) {
     auto colon_pos = line.find(':');
     if (colon_pos == line.npos) {
         return {};
@@ -98,24 +86,43 @@ CommandDescription ParseCommandDescription(std::string_view line) {//испол�
             std::string(line.substr(colon_pos + 1))};
 }
 
-void InputReader::ParseLine(std::string_view line) { //используется для начального ввода строки
-    auto command_description = ParseCommandDescription(line);
+} 
+
+void InputReader::ParseLine(std::string_view line) {
+    auto command_description = detail::ParseCommandDescription(line);
     if (command_description) {
         commands_.push_back(std::move(command_description));
     }
 }
 
-void InputReader::ApplyCommands([[maybe_unused]] transport::TransportCatalogue& catalogue) const {
-    for(auto ii = 0u; ii < commands_.size(); ++ii){
-        if(commands_[ii].command == Stop){
-            std::string name_stop = commands_[ii].id;
-            geo::Coordinates coordinates = ParseCoordinates(commands_[ii].description);
-            catalogue.InputStopsCoordinates(name_stop, coordinates);
-        }
-        else if(commands_[ii].command == Bus){
-            auto bus_name = commands_[ii].id;
-            auto vec_stops = ParseRoute(commands_[ii].description);
-            catalogue.InputBusStops(bus_name, vec_stops);
+CommandType GetCommandType(const std::string_view& command) {
+    if (command == "Stop"s) {
+        return CommandType::STOP;
+    } else if (command == "Bus"s) {
+        return CommandType::BUS;
+    }
+    return CommandType::UNKNOWN;
+}
+
+void InputReader::ApplyCommands([[maybe_unused]] TransportCatalogue& catalogue) const {
+    std::vector<CommandDescription> only_bus_commands;
+
+    for (const auto& command : commands_) {
+        auto command_type = GetCommandType(command.command);
+        if (command_type == CommandType::STOP) {
+            catalogue.AddStop({command.id, detail::ParseCoordinates(command.description)});
+        } else if (command_type == CommandType::BUS) {
+            only_bus_commands.push_back(std::move(command));
         }
     }
+
+    for (const auto& command : only_bus_commands) {
+        std::vector<Stop*> stops;
+        for (const auto& stop : detail::ParseRoute(command.description)) {
+            stops.push_back(catalogue.FindStop(stop));
+        }
+        catalogue.AddBus({command.id, std::move(stops)});
+    }
+}
+
 }

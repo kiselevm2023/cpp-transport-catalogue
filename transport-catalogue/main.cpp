@@ -5,9 +5,10 @@
 #include "stat_reader.h"
 
 using namespace std;
+using namespace transport_catalogue;
 
 int main() {
-    transport::TransportCatalogue catalogue;
+    TransportCatalogue catalogue;
 
     int base_request_count;
     cin >> base_request_count >> ws;
@@ -21,6 +22,7 @@ int main() {
         }
         reader.ApplyCommands(catalogue);
     }
+
     int stat_request_count;
     cin >> stat_request_count >> ws;
     for (int i = 0; i < stat_request_count; ++i) {
