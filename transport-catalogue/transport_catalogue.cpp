@@ -53,14 +53,14 @@ double TransportCatalogue::GetRouteLength(const std::string_view& request) const
         return 0.0;
     }
 
-    const Bus* bus_ptr = it->second; // Получаем указатель на Bus
+    const Bus* bus= it->second; // Получаем указатель на Bus
 
-    if (bus_ptr->stops.empty()) {
+    if (bus->stops.empty()) {
         return 0.0;
     }
 
-    for (std::size_t i = 1; i < bus_ptr->stops.size(); ++i) {
-        res += ComputeDistance(bus_ptr->stops[i - 1]->coordinates, bus_ptr->stops[i]->coordinates);
+    for (std::size_t i = 1; i < bus->stops.size(); ++i) {
+        res += ComputeDistance(bus->stops[i - 1]->coordinates, bus->stops[i]->coordinates);
     }
 
     return res;
