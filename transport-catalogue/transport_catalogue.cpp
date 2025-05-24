@@ -9,7 +9,7 @@ void TransportCatalogue::AddStop(const Stop& stop) {
     stopname_to_stop_[stops_.back().name] = &stops_.back();
 }
 
-Stop* TransportCatalogue::FindStop(const std::string_view& stop_name) const {
+Stop* TransportCatalogue::FindStop(const std::string_view stop_name) const {
     auto stop = stopname_to_stop_.find(stop_name);
     if (stop == stopname_to_stop_.end()) {
         return nullptr;
@@ -25,7 +25,7 @@ void TransportCatalogue::AddBus(const Bus& bus) {
     }
 }
 
-Bus* TransportCatalogue::FindBus(const std::string_view& bus_name) const {
+Bus* TransportCatalogue::FindBus(const std::string_view bus_name) const {
     auto bus = busname_to_bus_.find(bus_name);
     if (bus == busname_to_bus_.end()) {
         return nullptr;
@@ -47,22 +47,37 @@ std::size_t TransportCatalogue::GetUniqueStops(const std::string_view& request) 
 
 double TransportCatalogue::GetRouteLength(const std::string_view& request) const {
     double res = 0.0;
-    auto& bus = busname_to_bus_.at(request);
-    for (std::size_t i = 1; i < bus->stops.size(); ++i) {
-        res += ComputeDistance(bus->stops[i-1]->coordinates, bus->stops[i]->coordinates);
+
+    auto it = busname_to_bus_.find(request);
+    if (it == busname_to_bus_.end()) {
+        return 0.0;
     }
+
+    const Bus* bus_ptr = it->second; // Получаем указатель на Bus
+
+    if (bus_ptr->stops.empty()) {
+        return 0.0;
+    }
+
+    for (std::size_t i = 1; i < bus_ptr->stops.size(); ++i) {
+        res += ComputeDistance(bus_ptr->stops[i - 1]->coordinates, bus_ptr->stops[i]->coordinates);
+    }
+
     return res;
 }
 
-BusInfo TransportCatalogue::GetBusInfo(const std::string_view& request) const {
+BusInfo TransportCatalogue::GetBusInfo(const std::string_view request) const {
     return BusInfo({GetStopsOnRoute(request), GetUniqueStops(request), GetRouteLength(request)});
 }
 
-std::set<std::string_view> TransportCatalogue::GetStopInfo(const std::string_view& request) const {
-    if (stopname_to_busname_.count(request) == 0) {
-        return std::set<std::string_view>();
+const std::set<std::string_view>& TransportCatalogue::GetStopInfo(const std::string_view request) const {
+    static const std::set<std::string_view> empty_set; // Статическая переменная для пустого множества
+
+    auto it = stopname_to_busname_.find(request);
+    if (it == stopname_to_busname_.end()) {
+        return empty_set; // Возвращаем ссылку на статическое пустое множество
     }
-    return stopname_to_busname_.at(request);
+    return it->second; // Возвращаем ссылку на существующее множество
 }
 
-} 
+}

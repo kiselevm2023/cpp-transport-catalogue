@@ -32,15 +32,15 @@ class TransportCatalogue {
 public:
     void AddStop(const Stop& stop);
 
-    Stop* FindStop(const std::string_view& stop_name) const ;
+    Stop* FindStop(const std::string_view stop_name) const ;
 
     void AddBus(const Bus& bus);
 
-    Bus* FindBus(const std::string_view& bus_name) const;
+    Bus* FindBus(const std::string_view bus_name) const;
 
-    BusInfo GetBusInfo(const std::string_view& request) const;
+    BusInfo GetBusInfo(const std::string_view request) const;
 
-    std::set<std::string_view> GetStopInfo(const std::string_view& request) const;
+    const std::set<std::string_view>& GetStopInfo(const std::string_view request) const;
 
 private:
     std::deque<Stop> stops_;
