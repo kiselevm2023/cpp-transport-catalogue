@@ -13,7 +13,7 @@ namespace transport_catalogue {
 
 enum class CommandType { BUS, STOP, UNKNOWN };
 
-CommandType GetCommandType(const std::string_view& command);
+CommandType GetCommandType(std::string_view command);
 
 struct CommandDescription {
     explicit operator bool() const {
@@ -24,19 +24,18 @@ struct CommandDescription {
         return !operator bool();
     }
 
-    std::string command;      // Название команды
-    std::string id;           // id маршрута или остановки
-    std::string description;  // Параметры команды
+    std::string command;
+    std::string id;
+    std::string description;
 };
 
 class InputReader {
 public:
-    void ParseLine(std::string_view line); // Парсит строку в структуру CommandDescription и сохраняет результат в commands_
+    void ParseLine(std::string_view line);
 
-    void ApplyCommands(TransportCatalogue& catalogue) const; // Наполняет данными транспортный справочник, используя команды из commands_
+    void ApplyCommands(TransportCatalogue& catalogue) const;
 
 private:
     std::vector<CommandDescription> commands_;
 };
-
 } 

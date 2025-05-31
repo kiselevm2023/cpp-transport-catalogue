@@ -13,18 +13,48 @@ Coordinates ParseCoordinates(std::string_view str) {
     static const double nan = std::nan("");
 
     auto not_space = str.find_first_not_of(' ');
-    auto comma = str.find(',');
+    auto comma_first = str.find(',');
 
-    if (comma == str.npos) {
+    if (comma_first == str.npos) {
         return {nan, nan};
     }
 
-    auto not_space2 = str.find_first_not_of(' ', comma + 1);
+    auto not_space2 = str.find_first_not_of(' ', comma_first + 1);
+    auto comma_second = str.find(',', not_space2);
 
-    double lat = std::stod(std::string(str.substr(not_space, comma - not_space)));
-    double lng = std::stod(std::string(str.substr(not_space2)));
+    double lat = std::stod(std::string(str.substr(not_space, comma_first - not_space)));
+    double lng = std::stod(std::string(str.substr(not_space2, comma_second - not_space2)));
 
     return {lat, lng};
+}
+
+std::vector<Distance> ParseStopsDistance(std::string_view str) {
+    std::vector<Distance> res;
+
+    auto comma_first = str.find(',');
+    auto comma_second = str.find(',', comma_first + 1);
+
+    auto not_space = str.find_first_not_of(' ', comma_second + 1);
+    while (not_space != str.npos) {
+        auto metre = str.find('m', not_space);
+        int distance = std::stoi(std::string(str.substr(not_space, metre - not_space)));
+
+        auto not_space2 = str.find_first_not_of(' ', metre + 1);
+        auto space = str.find(' ', not_space2);
+        auto not_space3 = str.find_first_not_of(' ', space);
+        auto comma = str.find(',', not_space3);
+        std::string stop_name = std::string(str.substr(not_space3, comma - not_space3));
+
+        res.push_back({distance, stop_name});
+
+        if (comma == str.npos) {
+            not_space = comma;
+        } else {
+            not_space = str.find_first_not_of(' ', comma + 1);
+        }
+    }
+
+    return res;
 }
 
 std::string_view Trim(std::string_view string) {
@@ -85,7 +115,6 @@ CommandDescription ParseCommandDescription(std::string_view line) {
             std::string(line.substr(not_space, colon_pos - not_space)),
             std::string(line.substr(colon_pos + 1))};
 }
-
 } 
 
 void InputReader::ParseLine(std::string_view line) {
@@ -95,7 +124,7 @@ void InputReader::ParseLine(std::string_view line) {
     }
 }
 
-CommandType GetCommandType(const std::string_view& command) {
+CommandType GetCommandType(std::string_view command) {
     if (command == "Stop"s) {
         return CommandType::STOP;
     } else if (command == "Bus"s) {
@@ -105,24 +134,41 @@ CommandType GetCommandType(const std::string_view& command) {
 }
 
 void InputReader::ApplyCommands([[maybe_unused]] TransportCatalogue& catalogue) const {
+    std::vector<CommandDescription> only_stop_commands;
     std::vector<CommandDescription> only_bus_commands;
 
     for (const auto& command : commands_) {
         auto command_type = GetCommandType(command.command);
         if (command_type == CommandType::STOP) {
             catalogue.AddStop({command.id, detail::ParseCoordinates(command.description)});
+            only_stop_commands.push_back(std::move(command));
         } else if (command_type == CommandType::BUS) {
             only_bus_commands.push_back(std::move(command));
         }
     }
 
-    for (const auto& command : only_bus_commands) {
-        std::vector<Stop*> stops;
-        for (const auto& stop : detail::ParseRoute(command.description)) {
-            stops.push_back(catalogue.FindStop(stop));
+    for (const auto& command : only_stop_commands) {
+        auto distances = detail::ParseStopsDistance(command.description);
+        if (!distances.empty()) {
+            for (const auto& distance : distances) {
+                catalogue.AddDistanceBetweenStops(
+                    catalogue.FindStop(command.id), catalogue.FindStop(distance.stop_name), distance.distance
+                );
+            }
         }
-        catalogue.AddBus({command.id, std::move(stops)});
+    }
+
+    for (const auto& command : only_bus_commands) {
+
+        std::vector<const Stop*> stops;
+
+        for (const auto& stop_name : detail::ParseRoute(command.description)) {
+        
+            const Stop* stop_ptr = catalogue.FindStop(stop_name);
+            stops.push_back(stop_ptr);
+        }
+            
+       catalogue.AddBus(Bus{command.id, std::move(stops)});
     }
 }
-
-}
+} 

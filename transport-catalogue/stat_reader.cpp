@@ -22,7 +22,7 @@ void ParseAndPrintStat(const TransportCatalogue& transport_catalogue, std::strin
         } else {
             BusInfo bus_info = transport_catalogue.GetBusInfo(req);
             output << "Bus "s << req << ": "s << bus_info.stops_on_route << " stops on route, "s << bus_info.unique_stops << " unique stops, "s
-                   << bus_info.route_length << " route length"s << std::endl;
+                   << bus_info.route_length << " route length, "s << bus_info.curvature << " curvature"s << std::endl;
         }
     } else {
         auto req = request.substr(not_space);
@@ -43,4 +43,4 @@ void ParseAndPrintStat(const TransportCatalogue& transport_catalogue, std::strin
     }
 }
 
-}
+}  

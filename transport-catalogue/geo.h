@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cmath>
+#include <string>
 
 struct Coordinates {
     double lat;
@@ -11,6 +12,11 @@ struct Coordinates {
     bool operator!=(const Coordinates& other) const {
         return !(*this == other);
     }
+};
+
+struct Distance {
+    int distance;
+    std::string stop_name;
 };
 
 inline double ComputeDistance(Coordinates from, Coordinates to) {
