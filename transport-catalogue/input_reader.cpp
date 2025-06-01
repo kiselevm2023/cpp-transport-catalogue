@@ -151,7 +151,7 @@ void InputReader::ApplyCommands([[maybe_unused]] TransportCatalogue& catalogue) 
         auto distances = detail::ParseStopsDistance(command.description);
         if (!distances.empty()) {
             for (const auto& distance : distances) {
-                catalogue.AddDistanceBetweenStops(
+                catalogue.SetDistanceBetweenStops(
                     catalogue.FindStop(command.id), catalogue.FindStop(distance.stop_name), distance.distance
                 );
             }

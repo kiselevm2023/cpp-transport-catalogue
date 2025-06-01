@@ -51,7 +51,7 @@ public:
 
     const Stop* FindStop(const std::string_view stop_name) const;
 
-    void AddDistanceBetweenStops(const Stop* from, const Stop* to, int distance);
+    void SetDistanceBetweenStops(const Stop* from, const Stop* to, int distance);
 
     int GetDistanceBetweenStops(const Stop* from, const Stop* to) const;
 
@@ -72,8 +72,7 @@ private:
     std::unordered_map<std::string_view, Bus*> busname_to_bus_;
 
     std::unordered_map<std::string_view, std::set<std::string_view>> stopname_to_busname_;
-    std::set<std::string_view> empty_set_ = {};
-
+    
     std::size_t GetStopsOnRoute(const std::string_view request) const;
 
     std::size_t GetUniqueStops(const std::string_view& request) const;

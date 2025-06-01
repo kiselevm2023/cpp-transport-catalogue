@@ -19,16 +19,21 @@ const Stop* TransportCatalogue::FindStop(const std::string_view stop_name) const
     return stop->second;
 }
 
-void TransportCatalogue::AddDistanceBetweenStops(const Stop* from, const Stop* to, int distance) {
+void TransportCatalogue::SetDistanceBetweenStops(const Stop* from, const Stop* to, int distance) {
     distance_between_stops_[{from, to}] = distance;
 }
 
 int TransportCatalogue::GetDistanceBetweenStops(const Stop* from, const Stop* to) const {
-    auto distance = distance_between_stops_.find({from, to});
-    if (distance != distance_between_stops_.end()) {
-        return distance->second;
+    auto it = distance_between_stops_.find({from, to});
+    if (it != distance_between_stops_.end()) {
+        return it->second;
     }
-    return GetDistanceBetweenStops(to, from);
+
+    auto it_reverse = distance_between_stops_.find({to, from});
+    if (it_reverse != distance_between_stops_.end()) {
+        return it_reverse->second;
+    }    
+    return 0;
 }
 
 void TransportCatalogue::AddBus(const Bus& bus) {
@@ -90,7 +95,14 @@ int TransportCatalogue::GetRouteLength(const std::string_view& request) const {
 
 double TransportCatalogue::GetCurvature(std::string_view request) const {
     double res = 0.0;
-    auto& bus = busname_to_bus_.at(request);
+    auto it = busname_to_bus_.find(request);
+    if (it == busname_to_bus_.end()) {
+        return 0.0;
+    }
+    const Bus* bus = it->second;
+    if (bus->stops.empty()) {
+        return 0.0;
+    }    
     for (std::size_t i = 1; i < bus->stops.size(); ++i) {
         res += ComputeDistance(bus->stops[i-1]->coordinates, bus->stops[i]->coordinates);
     }
@@ -98,7 +110,8 @@ double TransportCatalogue::GetCurvature(std::string_view request) const {
 }
 
 BusInfo TransportCatalogue::GetBusInfo(const std::string_view request) const {
-    return BusInfo({GetStopsOnRoute(request), GetUniqueStops(request), GetRouteLength(request), GetRouteLength(request) / GetCurvature(request)});
+    return BusInfo({GetStopsOnRoute(request), GetUniqueStops(request), 
+                    GetRouteLength(request), GetRouteLength(request) / GetCurvature(request)});
 }
 
 const std::set<std::string_view>& TransportCatalogue::GetStopInfo(const std::string_view request) const {
