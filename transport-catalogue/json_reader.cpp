@@ -149,62 +149,62 @@ namespace {
     }
 
     void JsonReader::PrintJson(const RequestHandler& request_handler, std::ostream& out) const {
-        json::Array res;
+        json::Builder builder;
+        builder.StartArray();
         for (const auto& command : *stat_commands_) {
             const auto& description = command.AsMap();
             const auto& type = description.at("type").AsString();
             if (type == "Bus") {
                 const auto& bus_info = request_handler.GetBusStat(description.at("name").AsString());
-                PrintBusInfo(res, bus_info, description.at("id").AsInt());
+                PrintBusInfo(builder, bus_info, description.at("id").AsInt());
             } else if (type == "Stop") {
                 const auto& stop_info = request_handler.GetBusesByStop(description.at("name").AsString());
-                PrintStopInfo(res, stop_info, description.at("id").AsInt());
+                PrintStopInfo(builder, stop_info, description.at("id").AsInt());
             } else if (type == "Map") {
-                json::Dict map;
                 std::ostringstream map_out;
                 request_handler.RenderMap().Render(map_out);
-                map.insert({"map", map_out.str()});
-                map.insert({"request_id", description.at("id").AsInt()});
-                res.push_back(map);
+                builder.StartDict()
+                            .Key("map").Value(map_out.str())
+                            .Key("request_id").Value(description.at("id").AsInt())
+                        .EndDict();
             }
         }
-        json::Document doc(res);
-        json::Print(doc, out);
+        builder.EndArray();
+        json::Print(json::Document{builder.Build()}, out);
     }
 
-    void JsonReader::PrintBusInfo(json::Array& res, const std::optional<BusInfo>& bus_info, int id) const {
-        json::Dict bus;
-        bus.insert({"request_id", id});
+    void JsonReader::PrintBusInfo(json::Builder& builder, const std::optional<BusInfo>& bus_info, int id) const {
+        builder.StartDict()
+                    .Key("request_id").Value(id);
         if (bus_info.has_value()) {
-            bus.insert({"curvature", bus_info->curvature});
-            bus.insert({"route_length", double(bus_info->route_length)});
-            bus.insert({"stop_count", static_cast<int>(bus_info->stops_on_route)});
-            bus.insert({"unique_stop_count", static_cast<int>(bus_info->unique_stops)});
+            builder.Key("curvature").Value(bus_info->curvature)
+                    .Key("route_length").Value(double(bus_info->route_length))
+                    .Key("stop_count").Value(static_cast<int>(bus_info->stops_on_route))
+                    .Key("unique_stop_count").Value(static_cast<int>(bus_info->unique_stops));
         } else {
-            bus.insert({"error_message", std::string("not found")});
+            builder.Key("error_message").Value(std::string("not found"));
         }
-        res.push_back(bus);
+        builder.EndDict();
     }
 
-    void JsonReader::PrintStopInfo(json::Array& res, const std::optional<std::unordered_set<std::string_view>>& stop_info, int id) const {
-        json::Dict stop;
-        stop.insert({"request_id", id});
+    void JsonReader::PrintStopInfo(json::Builder& builder, const std::optional<std::unordered_set<std::string_view>>& stop_info, int id) const {
+        builder.StartDict()
+                    .Key("request_id").Value(id);
         if (stop_info.has_value()) {
             if (!stop_info->empty()) {
-                json::Array buses;
+                builder.Key("buses").StartArray();
                 std::set<std::string_view> sorted_stop_info((*stop_info).begin(), (*stop_info).end());
                 for (const auto& bus_name : sorted_stop_info) {
-                    buses.push_back(std::string(bus_name));
+                    builder.Value(std::string(bus_name));
                 }
-                stop.insert({"buses", buses});
+                builder.EndArray();
             } else {
-                json::Array buses;
-                stop.insert({"buses", buses});
+                builder.Key("buses").StartArray().EndArray();
             }
         } else {
-            stop.insert({"error_message", std::string("not found")});
+            builder.Key("error_message").Value(std::string("not found"));
         }
-        res.push_back(stop);
+        builder.EndDict();
     }
 
 }  // namespace json_reader

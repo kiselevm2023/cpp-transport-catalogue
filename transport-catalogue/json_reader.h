@@ -4,6 +4,7 @@
 #include "json.h"
 #include "request_handler.h"
 #include "map_renderer.h"
+#include "json_builder.h"
 
 namespace json_reader {
 
@@ -28,8 +29,8 @@ namespace json_reader {
         void StopsHandle(json::Array& only_stop_commands, TransportCatalogue& catalogue) const;
         void BusesHandle(json::Array& only_bus_commands, TransportCatalogue& catalogue) const;
 
-        void PrintBusInfo(json::Array& res, const std::optional<BusInfo>& bus_info, int id) const;
-        void PrintStopInfo(json::Array& res, const std::optional<std::unordered_set<std::string_view>>& stop_info, int id) const;
+        void PrintBusInfo(json::Builder& builder, const std::optional<BusInfo>& bus_info, int id) const;
+        void PrintStopInfo(json::Builder& builder, const std::optional<std::unordered_set<std::string_view>>& stop_info, int id) const;
     };
 
 }  // namespace json_reader
