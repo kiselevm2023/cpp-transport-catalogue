@@ -1,4 +1,4 @@
-#include "transport_catalogue.h"
+ #include "transport_catalogue.h"
 
 #include <utility>
 #include <cassert>
@@ -90,6 +90,10 @@ namespace transport_catalogue {
 
     const std::deque<Bus>& TransportCatalogue::GetBuses() const {
         return buses_;
+    }
+
+    const std::deque<Stop>& TransportCatalogue::GetStops() const {
+        return stops_;
     }
 
     BusInfo TransportCatalogue::GetBusInfo(const std::string_view request) const {

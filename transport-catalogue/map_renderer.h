@@ -1,4 +1,4 @@
-#pragma once
+ #pragma once
 
 #include "svg.h"
 #include "geo.h"
@@ -109,7 +109,7 @@ namespace {
     class MapRenderer {
     public:
         svg::Document Render(const std::deque<domain::Bus>& buses) const;
-        void SetSettings(const RenderSettings& settings);
+        void SetSettings(RenderSettings settings);
             
     private:
         RenderSettings settings_;

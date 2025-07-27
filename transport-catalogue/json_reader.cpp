@@ -1,4 +1,4 @@
-#include "json_reader.h"
+ #include "json_reader.h"
 
 #include <string>
 #include <sstream>
@@ -43,6 +43,7 @@ namespace {
         request_commands_ = &root.at("base_requests").AsArray();
         stat_commands_ = &root.at("stat_requests").AsArray();
         render_settings_ = &root.at("render_settings").AsMap();
+        route_settings_ = &root.at("routing_settings").AsMap();
     }
 
     void JsonReader::ApplyCommands(TransportCatalogue& catalogue) const {
@@ -105,7 +106,7 @@ namespace {
         }
     }
 
-    void JsonReader::ApplySettingsCommands(renderer::MapRenderer& renderer) const {
+    void JsonReader::ApplyRenderSettingsCommands(renderer::MapRenderer& renderer) const {
         renderer::RenderSettings settings;
         for (const auto& [key, value] : *render_settings_) {
             if (key == "width") {
@@ -145,7 +146,19 @@ namespace {
                 }
             }
         }
-        renderer.SetSettings(settings);
+        renderer.SetSettings(std::move(settings));
+    }
+
+    void JsonReader::ApplyRouteSettingsCommands(transport_router::TransportRouter& router) const {
+        transport_router::RouteSettings settings;
+        for (const auto& [key, value] : *route_settings_) {
+            if (key == "bus_velocity") {
+                settings.bus_velocity = value.AsDouble();
+            } else if (key == "bus_wait_time") {
+                settings.bus_wait_time = value.AsDouble();
+            }
+        }
+        router.SetSettingsAndBuild(std::move(settings));
     }
 
     void JsonReader::PrintJson(const RequestHandler& request_handler, std::ostream& out) const {
@@ -167,6 +180,12 @@ namespace {
                             .Key("map").Value(map_out.str())
                             .Key("request_id").Value(description.at("id").AsInt())
                         .EndDict();
+            } else if (type == "Route") {
+                const auto& route_info = request_handler.GetRouteInfo(
+                    description.at("from").AsString(),
+                    description.at("to").AsString()
+                );
+                PrintRouteInfo(builder, route_info, description.at("id").AsInt());
             }
         }
         builder.EndArray();
@@ -201,6 +220,31 @@ namespace {
             } else {
                 builder.Key("buses").StartArray().EndArray();
             }
+        } else {
+            builder.Key("error_message").Value(std::string("not found"));
+        }
+        builder.EndDict();
+    }
+
+    void JsonReader::PrintRouteInfo(json::Builder& builder, const std::optional<transport_router::RouteItems>& route_info, int id) const {
+        builder.StartDict()
+                    .Key("request_id").Value(id);
+        if (route_info.has_value()) {
+            builder.Key("total_time").Value(route_info->total_time)
+                    .Key("items").StartArray();
+            for (const auto& item : route_info->items) {
+                builder.StartDict();
+                builder.Key("time").Value(item.time)
+                        .Key("type").Value(item.type);
+                if (item.type == "Wait") {
+                    builder.Key("stop_name").Value(item.name);
+                } else if (item.type == "Bus") {
+                    builder.Key("bus").Value(item.name)
+                            .Key("span_count").Value(item.span);
+                }
+                builder.EndDict();
+            }
+            builder.EndArray();
         } else {
             builder.Key("error_message").Value(std::string("not found"));
         }

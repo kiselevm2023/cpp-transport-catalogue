@@ -1,9 +1,10 @@
-#include "map_renderer.h"
+ #include "map_renderer.h"
 
 #include <memory>
 #include <cstdlib>
 #include <iostream>
 #include <optional>
+#include <utility>
 
 namespace renderer {
 
@@ -216,8 +217,8 @@ namespace {
         return doc;
     }
 
-    void MapRenderer::SetSettings(const RenderSettings& settings) {
-        settings_ = settings;
+    void MapRenderer::SetSettings(RenderSettings settings) {
+        settings_ = std::move(settings);
     }
 
 }  // namespace renderer

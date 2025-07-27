@@ -1,4 +1,4 @@
-#pragma once
+ #pragma once
 
 #include <cassert>
 #include <deque>
@@ -32,6 +32,8 @@ namespace transport_catalogue {
         const std::unordered_set<std::string_view>& GetStopInfo(const std::string_view request) const;
 
         const std::deque<Bus>& GetBuses() const;
+        
+        const std::deque<Stop>& GetStops() const;
 
     private:
         std::deque<Stop> stops_;
