@@ -4,7 +4,7 @@
 
 namespace json {
 
-Builder::Builder() : root_(), nodes_stack_{&root_} {} 
+Builder::Builder() : root_(), nodes_stack_{&root_} {}
 
 Builder::DictContext Builder::StartDict() {
     SetNode(Dict{}, false);

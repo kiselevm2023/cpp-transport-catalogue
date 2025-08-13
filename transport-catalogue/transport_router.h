@@ -1,4 +1,4 @@
-#pragma once
+ #pragma once
 
 #include "transport_catalogue.h"
 #include "graph.h"
@@ -15,7 +15,7 @@ namespace transport_router {
 
 using namespace transport_catalogue;
 
-struct RouteSettings {
+struct RoutingSettings {
     double bus_wait_time;
     double bus_velocity;
 };
@@ -34,15 +34,17 @@ struct RouteItems {
 
 class TransportRouter {
 public:
-    TransportRouter(const TransportCatalogue& catalogue);
+    TransportRouter(const TransportCatalogue& catalogue, const RoutingSettings& settings);
 
-    void SetSettingsAndBuild(RouteSettings settings);
+    void SetRoutingSettings(const RoutingSettings& settings);
 
     std::optional<RouteItems> GetRouteInfo(const std::string_view from, const std::string_view to) const;
 
+    void BuildRoute();
+
 private:
     const TransportCatalogue& catalogue_;
-    RouteSettings settings_;
+    RoutingSettings settings_;
 
     std::unique_ptr<graph::DirectedWeightedGraph<double>> transport_graph_;
     std::unique_ptr<graph::Router<double>> transport_router_;
@@ -57,7 +59,7 @@ private:
     void AddStopsIntoGraph();
 
     void AddBusEdgeIntoGraph(
-        const Stop* from, 
+        const Stop* from,
         const Stop* to,
         const std::string_view bus_name,
         int span_count,
@@ -66,8 +68,11 @@ private:
 
     void AddBusIntoGraph(const Bus& bus);
 
-    void BuildRoute();
+    
 
 };
+
+// Вне класса — отдельная функция для перестроения маршрутов
+void BuildRoute(transport_router::TransportRouter& router);
 
 } // namespace transport_router

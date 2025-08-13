@@ -13,11 +13,10 @@ using namespace renderer;
 using namespace std;
 
 int main() {
-    // fstream inputFile("input.json");
-
     TransportCatalogue catalogue;
     MapRenderer map_renderer;
-    TransportRouter transport_router(catalogue);
+    RoutingSettings route_settings; // Initialize with default values or from a config file
+    TransportRouter transport_router(catalogue, route_settings); // Pass the settings here
     RequestHandler request_handler(catalogue, map_renderer, transport_router);
 
     JsonReader reader(cin);
@@ -25,4 +24,6 @@ int main() {
     reader.ApplyRenderSettingsCommands(map_renderer);
     reader.ApplyRouteSettingsCommands(transport_router);
     reader.PrintJson(request_handler, cout);
+
+    return 0;
 }
